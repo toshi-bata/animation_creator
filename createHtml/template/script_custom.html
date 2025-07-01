@@ -1,0 +1,568 @@
+<style>
+    #animateBtns {
+        position: absolute;
+    }
+    .animateBtn {
+        width: 36px;
+        height: 36px;
+    }
+</style>
+<script>
+    var _animationSteps = null;
+    var _animationController = null;
+    $(function() {
+        var resizeTimer;
+        var interval = Math.floor(1000 / 60 * 10);
+        $(window).resize(function() {
+          if (resizeTimer !== false) {
+            clearTimeout(resizeTimer);
+          }
+          resizeTimer = setTimeout(function () {
+            layoutPage()
+          }, interval);
+        });
+
+        layoutPage();
+        function layoutPage () {
+            var winWidth = $(window).innerWidth();
+
+            $("#animateBtns").offset({ 
+                top: 20,
+                left: (winWidth - $("#animateBtns").width()) / 2 
+            });
+        }            
+
+        $(".animateBtn").on("click", function() {
+            var command = $(this).data("command");
+            switch (command) {
+                case "rewind":
+                    _animationController.rewind();
+                    break;
+                case "play":
+                    _animationController.play();         
+                    break;
+                case "pause":
+                    _animationController.pause();
+                    break;
+            };
+        });
+    });
+
+    var AnimationSteps = function(msgs, types) {
+        this._msgs = msgs;
+        this._types = types;
+        this._homeCamera;
+        this._steps = [];
+        this._stepId = 0;
+        this._buttonId = 1;
+        this._typeId = 2;
+        this._nodesId = 3;
+        this._directionId = 4;
+        this._centerId = 5;
+        this._distanceId = 6;
+        this._startId = 7;
+        this._durationId = 8;
+        this._timelineId = 9;
+        this._id = 0;
+    }
+
+    AnimationSteps.prototype = {
+        setHomeCamera: function(camera) {
+            var _this = this;
+            var json = camera.forJson();
+            _this._homeCamera = json;
+        },
+
+        getHomeCamera: function() {
+            var _this = this;
+            return _this._homeCamera;
+        },
+
+        getTerminationTime: function() {
+            var _this = this;
+
+            var terminationTime = 0;
+            var tbl = document.getElementById("stepTable");
+            for (var i = 0; i < _this._steps.length; i++) {
+                var row = tbl.children[0].children[i + 1];
+                var startTime = htmlspecialchars(row.cells[_this._startId].getElementsByTagName("input")[0].value);
+                if (isNaN(startTime))
+                    continue;
+                var duration = htmlspecialchars(row.cells[_this._durationId].getElementsByTagName("input")[0].value);
+                if (isNaN(duration))
+                    continue;
+                var endTime = Number(startTime) + Number(duration);
+                if (terminationTime < endTime)
+                    terminationTime = endTime;
+            }
+            return terminationTime;
+        },
+
+        _addTableRow: function(start, duration, id) {
+            var _this = this;
+
+            var table = document.getElementById("stepTable");
+            var row = table.insertRow(-1);
+            row._id = id;
+            var cells = [];
+            for (var i = 0; i < 10; i++) {
+                var cell = row.insertCell(-1);
+                cell.className = "stepCell";
+                cells.push(cell);
+            }
+
+            cells[_this._stepId].innerHTML = id + 1;
+            cells[_this._stepId].className = "numberCell";
+            cells[_this._buttonId].innerHTML = '<input class="tableBtn" type="image" title="Delete" src="css/images/delete.png" onclick="deleteRow(this)" />';
+            cells[_this._buttonId].align = "center";
+            cells[_this._directionId].align = "center";
+            cells[_this._centerId].align = "center";
+            cells[_this._startId].innerHTML = '<input class="tableInput" id="start' + id + '" type="number" step="0.5" value="' + start + '" onChange="changeStart(this)" />';
+            cells[_this._durationId].innerHTML = '<input class="tableInput" id="duration' + id + '" type="number" step="0.5" value="' + String(duration) + '" onChange="changeDuration(this)" />';
+            cells[_this._timelineId].innerHTML = '<div class="slider" id="slider' + id + '"></div>';
+            $("#slider" + id).slider({
+                min: 0,
+                max: 10,
+                step: 0.5,
+                range: true,
+                values: [start, start + duration],
+                change: function(e, ui) {
+                  $('#start' + id).val(ui.values[0]);
+                  $('#duration' + id).val(ui.values[1] - ui.values[0]);
+                },
+            });
+
+            return cells;
+        },
+
+        addCameraStep: function(camera) {
+            var _this = this;
+
+            var terminationTime = _this.getTerminationTime();
+
+            var json = camera.forJson();
+            var step = {
+                type: "camera",
+                camera: json,
+                startTime: terminationTime * 1000,
+                duration: 500
+            }
+            _this._steps.push(step);
+
+            var cells = _this._addTableRow(terminationTime, 0.5, _this._id++);
+            cells[_this._typeId].innerHTML = _this._types[0];
+        },
+
+        addTranslationStep: function(nodes, vector, distance, start, duration) {
+            var _this = this;
+
+            var step = {
+                type: "translation",
+                nodes: nodes.concat(),
+                vector: vector,
+                distance: distance,
+                startTime: start * 1000,
+                duration: duration * 1000
+            }
+            _this._steps.push(step);
+
+            var cells = _this._addTableRow(start, duration, _this._id++);
+            cells[_this._typeId].innerHTML = _this._types[1];
+            cells[_this._nodesId].innerHTML = JSON.stringify(nodes);
+            var str = JSON.stringify(vector);
+            cells[_this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'vector\')" />';
+            cells[_this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(distance) + '">';
+        },
+
+        addRotationStep: function(nodes, axis, center, angle, start, duration) {
+            var _this = this;
+
+            var step = {
+                type: "rotation",
+                nodes: nodes.concat(),
+                axsis: axis,
+                center: center,
+                angle: angle,
+                startTime: start * 1000,
+                duration: duration * 1000
+            }
+            _this._steps.push(step);
+
+            var cells = _this._addTableRow(start, duration, _this._id++);
+            cells[_this._typeId].innerHTML = _this._types[2];
+            cells[_this._nodesId].innerHTML = JSON.stringify(nodes);
+            var str = JSON.stringify(axis);
+            cells[_this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'axsis\')" />';
+            str = JSON.stringify(center);
+            cells[_this._centerId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/center.png" onclick="changeXYZ(this,\'center\')" />';
+            cells[_this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(angle) + '" >';
+        },
+
+        addHideNodesStep: function(nodes) {
+            var _this = this;
+
+            var terminationTime = _this.getTerminationTime();
+            var step = {
+                type: "hideNodes",
+                nodes: nodes,
+                startTime: terminationTime * 1000,
+                duration: 500
+            }
+            _this._steps.push(step);
+
+            var cells = _this._addTableRow(terminationTime, 0.5, this._id++);
+            cells[_this._typeId].innerHTML = _this._types[3];
+            cells[_this._nodesId].innerHTML = JSON.stringify(nodes);
+        },
+
+        deleteStep: function(id) {
+            var _this = this;
+            _this._steps.splice(id, 1);
+        },
+
+        update: function() {
+            var _this = this;
+            var tbl = document.getElementById("stepTable");
+            var tbl = document.getElementById("stepTable");
+            for (var i = 0; i < _this._steps.length; i++) {
+                var step = _this._steps[i];
+                var row = tbl.children[0].children[i + 1];
+
+                if (step.type == "translation") {
+                    var distance = htmlspecialchars(row.cells[_this._distanceId].getElementsByTagName("input")[0].value);
+                    if (isNaN(distance)) {
+                        alert(_this._msgs[0] + String(i + 1));
+                        return false;
+                    }
+                    step.distance = Number(distance);
+                } else if (step.type == "rotation") {
+                    var angle = htmlspecialchars(row.cells[_this._distanceId].getElementsByTagName("input")[0].value);
+                    if (isNaN(angle)) {
+                        alert(_this._msgs[0] + String(i + 1));
+                        return false;
+                    }
+                    step.angle = Number(angle);
+                }
+
+                var startTime = htmlspecialchars(row.cells[_this._startId].getElementsByTagName("input")[0].value);
+                if (isNaN(startTime)) {
+                    alert(_this._msgs[1] + String(i + 1));
+                    return false;
+                }
+                step.startTime = Number(startTime * 1000);
+
+                var duration = htmlspecialchars(row.cells[_this._durationId].getElementsByTagName("input")[0].value);
+                if (isNaN(duration)) {
+                    alert(_this._msgs[2] + String(i + 1));
+                    return false;
+                }
+                step.duration = Math.round(Number(duration * 1000));
+            }
+            return true;
+        },
+
+        save: function() {
+            var _this = this;
+            return new Promise(function (resolve, reject) {
+                _this.update();
+
+                var data = {
+                    homeCamera: _this._homeCamera,
+                    steps: _this._steps
+                }
+                var str = JSON.stringify(data);
+                exportAsJson(str, "../../animation_creator/jsons/" + modelName + ".json").then(function(){
+                    resolve();
+                });
+            });
+        },
+
+        getSteps: function() {
+            var _this = this;
+            return _this._steps;
+        },
+
+        setSteps: function(steps) {
+            var _this = this;
+            _this._steps = steps;
+        },
+
+        listSteps: function() {
+            var _this = this;
+            var table = document.getElementById("stepTable");
+            var len = table.rows.length;
+            for(var i = 1; i < len; i++) {
+                var rows = table.deleteRow(1);
+            }
+
+            _this._id = 0;
+
+            for (var i = 0; i < _this._steps.length; i++) {
+                var step = _this._steps[i];
+                var start = step.startTime / 1000;
+                var duration = step.duration / 1000;
+                var cells = _this._addTableRow(start, duration, _this._id++);
+                switch(step.type) {
+                    case "camera":
+                        cells[_this._typeId].innerHTML = _this._types[0];
+                        break;
+                    case "translation":
+                        cells[_this._typeId].innerHTML = _this._types[1];
+                        cells[_this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        var str = JSON.stringify(step.vector);
+                        cells[_this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'vector\')" />';
+                        cells[_this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(step.distance) + '">';
+                        break;
+                    case "rotation":
+                        cells[_this._typeId].innerHTML = _this._types[2];
+                        cells[_this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        var str = JSON.stringify(step.axsis);
+                        cells[_this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'axsis\')" />';
+                        str = JSON.stringify(step.center);
+                        cells[_this._centerId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/center.png" onclick="changeXYZ(this,\'center\')" />';
+                        cells[_this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(step.angle) + '">';
+                        break;
+                    case "hideNodes":
+                        cells[_this._typeId].innerHTML = _this._types[3];
+                        cells[_this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        break;
+                }
+            }
+        }
+    };
+
+    var AnimationController = function(viewer, animationSteps) {
+        this._viewer = viewer;
+        this._animationSteps = animationSteps;
+        this._homeCamera;
+        this._pause = false;
+        this._animation = new animation(this._viewer);
+    }
+
+    AnimationController.prototype = {
+        play: function() {
+            var _this = this;
+            _this.rewind();
+
+            var steps = _this._animationSteps.getSteps();
+            var copySteps = steps.concat();
+
+            copySteps.sort(function(a,b){
+                if(a.startTime < b.startTime) return -1;
+                if(a.startTime > b.startTime) return 1;
+                return 0;
+            });
+
+            for (var i in copySteps) {
+                var j = 0;
+                setTimeout(function() {
+                    if (_this._pause)
+                        return;
+                    var step = copySteps[j];
+                    var type = step.type;
+                    switch(type) {
+                        case "translation":
+                            _this._animation.translateAnimation(step.nodes, step.vector, step.duration, step.distance, 100);
+                            break;
+                        case "rotation":
+                            _this._animation.rotateAnimation(step.nodes, step.axsis, step.center, step.duration, step.angle, 100);
+                            break;
+                        case "camera":
+                            var camera = new Communicator.Camera.construct(step.camera);
+                            _this._viewer.getView().setCamera(camera, step.duration);
+                            break;
+                        case "hideNodes":
+                            _this._animation.hideAnimation(step.nodes, step.duration);
+                            break;
+                    }
+                    j++;
+                }, copySteps[i].startTime);
+            }
+        },
+
+        pause: function() {
+            var _this = this;
+            _this._pause = !_this._pause;
+        },
+
+        rewind: function() {
+            var _this = this;
+            _this._pause = false;
+            _this._viewer.getModel().resetNodesTransform();
+
+            var root = _this._viewer.getModel().getRootNode();
+            _this._viewer.getModel().setNodesVisibility([root], true);
+
+             var cameraJson = _this._animationSteps.getHomeCamera();
+            if (cameraJson != undefined) {
+                var camera = new Communicator.Camera.construct(cameraJson);
+                _this._viewer.getView().setCamera(camera);
+            } else {
+                _this._viewer.getView().resetCamera(0);
+            }
+        },
+
+    };
+
+    var animation = function(viewer) {
+        this._viewer = viewer;
+        this._model = this._viewer.getModel();
+        this._interval = 100;
+    }
+
+    animation.prototype = {
+        hideAnimation: function (nodeIds, time) {
+            var _this = this;
+            var count = 0;
+            var interval = _this._interval;
+            var stepCount =  1;
+            var stepTransparence =  1;
+
+            if (interval <= time) {
+                stepCount =  Math.ceil(time / interval);
+                interval = time / stepCount;
+                stepTransparence = 1 / time * interval;
+            } else {
+                _this._model.setNodesVisibility(nodeIds, false);
+                return;
+            }
+
+            var transparence = 1;
+            var id = setInterval(function () {
+                transparence -= stepTransparence;
+                _this._model.setNodesTransparency(nodeIds, transparence);
+                count++;
+                if (count >= stepCount) {
+                    _this._model.setNodesVisibility(nodeIds, false);
+                    _this._model.resetNodesTransparency(nodeIds);
+                    clearInterval(id);
+                }
+            }, interval);
+        },
+
+        translateAnimation: function (nodeIds, vector, time, distance, interval) {
+            var _this = this;
+            var count = 0;
+            var stepCount =  1;
+            var stepDistance =  distance;
+
+            if (interval <= time) {
+                stepCount =  Math.ceil(time / interval);
+                interval = time / stepCount;
+                stepDistance = distance / time * interval;
+            } else {
+                interval = 0;
+            }
+
+            var nodeTranslationMatrixes = [];
+            for (var i = 0; i < nodeIds.length; i++) {
+                var nodeLocalVector = _this._convertToLocalVector(nodeIds[i], vector);
+                nodeTranslationMatrixes.push(new Communicator.Matrix());
+                nodeTranslationMatrixes[i].setTranslationComponent(
+                    nodeLocalVector.x * stepDistance, 
+                    nodeLocalVector.y * stepDistance, 
+                    nodeLocalVector.z * stepDistance);
+            }
+
+            var id = setInterval(function () {
+                for (var i = 0; i < nodeIds.length; i++) {
+                    var nodeMatrix = _this._model.getNodeMatrix(nodeIds[i]);
+                    _this._model.setNodeMatrix(nodeIds[i], Communicator.Matrix.multiply(nodeMatrix, nodeTranslationMatrixes[i]));
+                }
+                count++;
+                if (count >= stepCount) {
+                    clearInterval(id);
+                }
+            }, interval);
+        },
+
+        rotateAnimation: function (nodeIds, rotationAxis, basePoint, time, angle, interval) {
+            var _this = this;
+            var count = 0;
+            var stepCount = 1;
+            var stepAngle = angle;
+
+            if (interval <= time) {
+                stepCount = Math.ceil(time / interval);
+                interval = time / stepCount;
+                stepAngle = angle / time * interval;
+            }
+
+            var translationMatrix = new Communicator.Matrix();
+            var nodeRotationMatrixes = [];
+            var localPoints = [];
+
+            for (var i = 0; i < nodeIds.length; i++) {
+                var nodeLocalAxis = _this._convertToLocalVector(nodeIds[i], rotationAxis);
+                nodeRotationMatrixes.push(new Communicator.Matrix.createFromOffAxisRotation(nodeLocalAxis, stepAngle));
+
+                localPoints.push(_this._convertToLocalPoint(nodeIds[i], basePoint))
+            }
+
+            var id = setInterval(function () {
+                count++;
+                for (var i = 0; i < nodeIds.length; i++) {
+                    var point = new Communicator.Point3(0, 0, 0);
+                    nodeRotationMatrixes[i].transform(localPoints[i], point);
+                    translationMatrix.setTranslationComponent(
+                        localPoints[i].x - point.x,
+                        localPoints[i].y - point.y,
+                        localPoints[i].z - point.z);
+
+                    var nodeMatrix = _this._model.getNodeMatrix(nodeIds[i]);
+                    var multiplyMatrix = Communicator.Matrix.multiply(nodeMatrix, nodeRotationMatrixes[i]);
+                    _this._model.setNodeMatrix(nodeIds[i], Communicator.Matrix.multiply(multiplyMatrix, translationMatrix));
+                }
+
+                if (count >= stepCount) {
+                    clearInterval(id);
+                }
+            }, interval);
+        },
+
+        _convertToLocalVector: function (nodeId, vector) {
+            var _this = this;
+            var parentNode = _this._model.getNodeParent(nodeId);
+            var netMatrix = _this._model.getNodeNetMatrix(parentNode);
+            var inverseMatrix = new Communicator.Matrix.inverse(netMatrix);
+            var localVector0 = new Communicator.Point3(0, 0, 0);
+            inverseMatrix.transform(new Communicator.Point3(0, 0, 0), localVector0);
+            var localVector1 = new Communicator.Point3(0, 0, 0);
+            inverseMatrix.transform(vector, localVector1);
+            return new Communicator.Point3(
+                localVector1.x - localVector0.x, 
+                localVector1.y - localVector0.y, 
+                localVector1.z - localVector0.z);
+        },
+
+        _convertToLocalPoint: function (nodeId, point) {
+            var _this = this;
+            var parentNode = _this._model.getNodeParent(nodeId);
+            var netMatrix = _this._model.getNodeNetMatrix(parentNode);
+            var inverseMatrix = new Communicator.Matrix.inverse(netMatrix);
+            var local = new Communicator.Point3(0, 0, 0);
+            inverseMatrix.transform(point, local);
+            return local;
+        },
+
+        blinkMarkup: function (markupItem) {
+            var _this = this;
+            count = 0;
+            var interval = 200;
+            var circleMarkupHandle;
+
+            var id = setInterval(function () {
+                if (count % 2 == 0) {
+                    circleMarkupHandle = _this._viewer.getMarkupManager().registerMarkup(markupItem);
+                } else {
+                    _this._viewer.getMarkupManager().unregisterMarkup(circleMarkupHandle);
+                }
+                count++;
+                if (count >= 6) {
+                    clearInterval(id);
+                }
+            }, interval);
+        }
+    };
+
+ </script>
