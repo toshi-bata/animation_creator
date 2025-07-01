@@ -44,7 +44,7 @@ JstreeTree.prototype = {
     createTreeFromCurrentModel: function() {
         var _this = this;
         
-        var root = _this._model.getRootNode();
+        var root = _this._model.getAbsoluteRootNode();
         var data = [];
         _this.createTreeObj(root, data, 0);
         

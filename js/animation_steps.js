@@ -7,21 +7,21 @@ class AnimationSteps {
         this._steps = [];
         this._stepId = 0;
         this._groupId = 1;
-        this._buttonId = 2;
-        this._typeId = 3;
-        this._nodesId = 4;
-        this._directionId = 5;
-        this._centerId = 6;
-        this._distanceId = 7;
-        this._startId = 8;
-        this._durationId = 9;
-        this._timelineId = 10;
+        this._buttonId = 1;
+        this._typeId = 2;
+        this._nodesId = 3;
+        this._directionId = 4;
+        this._centerId = 5;
+        this._distanceId = 6;
+        this._startId = 7;
+        this._durationId = 8;
+        this._timelineId = 9;
         this._id = 0;
         this._currentGroupId = 0;
     }
 
     setHomeCamera(camera) {
-        var json = camera.forJson();
+        var json = camera.toJson();
         this._homeCamera = json;
     }
     
@@ -62,8 +62,8 @@ class AnimationSteps {
         cells[this._stepId].className = "numberCell";
         if (undefined != group) {
             cells[this._groupId].innerHTML = group;
+            cells[this._groupId].className = "numberCell";
         }
-        cells[this._groupId].className = "numberCell";
         cells[this._buttonId].innerHTML = '<input class="tableBtn" type="image" title="Delete" src="css/images/delete.png" onclick="deleteRow(this)" />';
         cells[this._buttonId].align = "center";
         cells[this._directionId].align = "center";

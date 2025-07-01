@@ -1,4 +1,9 @@
-function animation_creator (language) {
+import * as Communicator from "../../hoops-web-viewer.mjs";
+import { createViewer } from "../create_viewer.js";
+import { LoadStepData, AnimationController } from "../animation_common.js";
+import { myHandleOperator, HandleOperatorOperator } from "./handle_operator_operator.js";
+import { HandleOperator, NodesSelectOperator, VectorSelectOperator, PointSelectOperator } from "./operators.js";
+export function animation_creator (language) {
     this._resource = new SetResources(language);
     this._msgs = this._resource.getMsgs();
     this._labels = this._resource.getLabels();
@@ -679,7 +684,7 @@ animation_creator.prototype._createViewer = function (viewerMode, modelName, rev
                 }
                 var camera = data.homeCamera;
                 if(camera != undefined) {
-                    _this._homeCamera = new Communicator.Camera.construct(camera)
+                    _this._homeCamera = Communicator.Camera.fromJson(camera)
                     _this._animationSteps.setHomeCamera(_this._homeCamera);
                 }
             });

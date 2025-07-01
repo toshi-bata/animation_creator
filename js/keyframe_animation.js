@@ -1,4 +1,5 @@
-class KeyframeAnimation {
+import * as Communicator from "../hoops-web-viewer.mjs";
+export class KeyframeAnimation {
     constructor(viewer, animationName) {
         this._viewer = viewer;
         this._animation;
@@ -73,7 +74,7 @@ class KeyframeAnimation {
         // Compute invers matrix of the parent node
         const parentNode = this._viewer.model.getNodeParent(nodeId);
         const netMatrix = this._viewer.model.getNodeNetMatrix(parentNode);
-        const inverseMatrix = new Communicator.Matrix.inverse(netMatrix);
+        const inverseMatrix = Communicator.Matrix.inverse(netMatrix);
 
         // Convert vector in the parent node 
         const localOrg = Communicator.Point3.zero();
@@ -91,7 +92,7 @@ class KeyframeAnimation {
         // Compute invers matrix of the parent node
         const parentNode = this._viewer.model.getNodeParent(nodeId);
         const netMatrix = this._viewer.model.getNodeNetMatrix(parentNode);
-        const inverseMatrix = new Communicator.Matrix.inverse(netMatrix);
+        const inverseMatrix = Communicator.Matrix.inverse(netMatrix);
         
         // Conpute rotatation vector in the parent node 
         const localAxis0 = Communicator.Point3.zero();
@@ -271,7 +272,7 @@ class KeyframeAnimation {
     addCameraAnimation(camera, startTime, duration) {
         // Create channels of cameta
         if (!this._channelMap.has("Camera-Position")) {
-            const channels = Communicator.Animation.Util.createCameraChannels(this._animation, "Camera", Communicator.Animation.InterpolationType.Linear);
+            const channels = Communicator.Animation.createCameraChannels(this._animation, "Camera", Communicator.Animation.InterpolationType.Linear);
             for (const channel of channels) {
                 this._channelMap.set(channel.name, channel);
             }
@@ -287,10 +288,10 @@ class KeyframeAnimation {
         }
 
         // Add camera animation
-        Communicator.Animation.Util.keyframeCamera(startTime, this._currentCamera, this._animation);
+        Communicator.Animation.keyframeCamera(startTime, this._currentCamera, this._animation);
 
         if (0 < duration) {
-            Communicator.Animation.Util.keyframeCamera(startTime + duration, camera, this._animation);
+            Communicator.Animation.keyframeCamera(startTime + duration, camera, this._animation);
         }
 
         this._currentCamera = camera;

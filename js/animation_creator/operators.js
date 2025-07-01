@@ -1,8 +1,10 @@
-class HandleOperator {
+import * as Communicator from "../../hoops-web-viewer.mjs";
+import { ArrowMarkup } from "../common_utilities.js";
+export class HandleOperator {
     constructor(viewer, animationSteps) {
         this._viewer = viewer;
         this._animationSteps = animationSteps;
-        this._handleOperator = viewer.getOperatorManager().getOperator(Communicator.OperatorId.Handle);
+        this._handleOperator = viewer.operatorManager.getOperator(Communicator.OperatorId.Handle);
         this._nodes = [];
         this._minSt;
     };
@@ -14,7 +16,7 @@ class HandleOperator {
         }
         
         if (this._handleOperator._dragCount > 0) {
-            _this._viewer.getModel().getNodesBounding(_this._nodes).then(function(box){
+            _this._viewer.model.getNodesBounding(_this._nodes).then(function(box){
                 var vector = unitVector(_this._minSt, box.min);
                 var distance = Math.round(Communicator.Point3.distance(_this._minSt, box.min));
                 if (distance < 1)
@@ -25,10 +27,10 @@ class HandleOperator {
         }
             
         var pickConfig = new Communicator.PickConfig(Communicator.SelectionMask.Face);
-        _this._viewer.getView().pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
+        _this._viewer.view.pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
             var nodeId = selectionItem.getNodeId();
             if (nodeId > 0) {
-                var model = _this._viewer.getModel();
+                var model = _this._viewer.model;
                 model.setNodesHighlighted([0], false).then(function() {
                     if (!event.controlDown()) {
                         _this._nodes.length = 0;
@@ -54,8 +56,8 @@ class HandleOperator {
     reset() {
         var _this = this;
         _this._handleOperator.removeHandles();
-        var root = _this._viewer.getModel().getRootNode();
-        _this._viewer.getModel().setNodesHighlighted([root], false);
+        var root = _this._viewer.model.getRootNode();
+        _this._viewer.model.setNodesHighlighted([root], false);
         _this._nodes.length = 0;
     }
     
@@ -65,7 +67,7 @@ class HandleOperator {
     }
 }
 
-class NodesSelectOperator {
+export class NodesSelectOperator {
     constructor(viewer, msgs) {
         this._viewer = viewer;
         this._msgs = msgs;
@@ -79,10 +81,10 @@ class NodesSelectOperator {
         }
         
         var pickConfig = new Communicator.PickConfig(Communicator.SelectionMask.Face);
-        _this._viewer.getView().pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
+        _this._viewer.view.pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
             var nodeId = selectionItem.getNodeId();
             if (nodeId > 0) {
-                // nodeId = _this._viewer.getModel().getNodeParent(nodeId);
+                // nodeId = _this._viewer.model.getNodeParent(nodeId);
                 _this.selected(nodeId);
             }
         });
@@ -90,8 +92,8 @@ class NodesSelectOperator {
     
     reset() {
         var _this = this;
-        var root = _this._viewer.getModel().getRootNode();
-        _this._viewer.getModel().setNodesHighlighted([root], false);
+        var root = _this._viewer.model.getAbsoluteRootNode();
+        _this._viewer.model.setNodesHighlighted([root], false);
         _this._nodes.length = 0;
     }
     
@@ -102,7 +104,7 @@ class NodesSelectOperator {
     
     selected(nodeId) {
         var _this = this;
-        var model = _this._viewer.getModel();
+        var model = _this._viewer.model;
         
         mainViewer.resetLineHighlighted();
         
@@ -133,7 +135,7 @@ class NodesSelectOperator {
     }
 }
 
-class VectorSelectOperator {
+export class VectorSelectOperator {
     constructor(viewer) {
         this._viewer = viewer;
         this._currentNode;
@@ -151,7 +153,7 @@ class VectorSelectOperator {
             _this._currentId = undefined;
             _this._isFlip = undefined;
             _this._vector = undefined;
-            _this._viewer.getMarkupManager().unregisterMarkup(_this._markupHandle);
+            _this._viewer.markupManager.unregisterMarkup(_this._markupHandle, _this._viewer.view);
             _this._markupHandle = undefined;
         }
     }
@@ -160,7 +162,7 @@ class VectorSelectOperator {
         var _this = this;
         
         var pickConfig = new Communicator.PickConfig(Communicator.SelectionMask.Line);
-        _this._viewer.getView().pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
+        _this._viewer.view.pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
             var line = selectionItem.getLineEntity();
             if (line) {
                 var points = line.getPoints();
@@ -192,7 +194,7 @@ class VectorSelectOperator {
                             markupItem.setPosiiton(points[1], points[0]);
                             _this._vector = unitVector(points[1], points[0]);
                         }                        
-                        _this._markupHandle = _this._viewer.getMarkupManager().registerMarkup(markupItem);
+                        _this._markupHandle = _this._viewer.markupManager.registerMarkup(markupItem, _this._viewer.view);
                         console.log(_this._vector);                        
                     }
                 } else {
@@ -211,7 +213,7 @@ class VectorSelectOperator {
     }
 }
 
-class PointSelectOperator {
+export class PointSelectOperator {
     constructor(viewer) {
         this._viewer = viewer;
         this._markupHandle;
@@ -225,13 +227,13 @@ class PointSelectOperator {
         }
         
         var pickConfig = new Communicator.PickConfig(Communicator.SelectionMask.Face);
-        _this._viewer.getView().pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
+        _this._viewer.view.pickFromPoint(event.getPosition(), pickConfig).then(function (selectionItem) {
             var selectionPosition = selectionItem.getPosition();
             if (selectionPosition) {
-                _this._viewer.getMarkupManager().unregisterMarkup(_this._markupHandle);
+                _this._viewer.markupManager.unregisterMarkup(_this._markupHandle, _this._viewer.view);
                 _this._point = selectionPosition;
                 var markupItem = new PointMarkup(_this._viewer, _this._point);
-                _this._markupHandle = _this._viewer.getMarkupManager().registerMarkup(markupItem);
+                _this._markupHandle = _this._viewer.markupManager.registerMarkup(markupItem, _this._viewer.view);
                 var x = _this._point.x;
                 var y = _this._point.y;
                 var z = _this._point.z;
@@ -251,7 +253,7 @@ class PointSelectOperator {
     
     reset() {
         var _this = this;
-        _this._viewer.getMarkupManager().unregisterMarkup(_this._markupHandle);
+        _this._viewer.markupManager.unregisterMarkup(_this._markupHandle, _this._viewer.view);
         _this._point = undefined;
     }
 }
@@ -266,8 +268,8 @@ class PointMarkup extends Communicator.Markup.MarkupItem {
 
     draw() {
         var _this = this;
-        _this._circle.set(Communicator.Point2.fromPoint3(this._viewer.getView().projectPoint(_this._point)), 3);
-        this._viewer.getMarkupManager().getRenderer().drawCircle(_this._circle);
+        _this._circle.set(Communicator.Point2.fromPoint3(this._viewer.view.projectPoint(_this._point)), 3);
+        this._viewer.markupManager.getRenderer().drawCircle(_this._circle);
     }
 
     hit() {

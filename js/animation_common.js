@@ -1,4 +1,6 @@
-function LoadStepData(modelName) {
+import * as Communicator from "../hoops-web-viewer.mjs";
+import { KeyframeAnimation } from "./keyframe_animation.js";
+export function LoadStepData(modelName) {
     return new Promise(function (resolve, reject) {
         var fileName = "jsons/" + modelName + ".json?" + (new Date).getTime();
         $.get(fileName).done(function(data, textStatus, jqXHR){
@@ -15,7 +17,7 @@ function LoadStepData(modelName) {
     });
 }
 
-class AnimationController {
+export class AnimationController {
     constructor(viewer, animationSteps) {
         this._viewer = viewer;
         this._animationSteps = animationSteps;
@@ -28,7 +30,7 @@ class AnimationController {
         this._keyFrameAnimation = new KeyframeAnimation(this._viewer, "animation_creator");
 
         const homeCameraObj = this._animationSteps.getHomeCamera();
-        const homeCamera = new Communicator.Camera.construct(homeCameraObj)
+        const homeCamera = Communicator.Camera.fromJson(homeCameraObj)
         this._keyFrameAnimation.setHomeCamera(homeCamera);
 
         var steps = this._animationSteps.getSteps();
