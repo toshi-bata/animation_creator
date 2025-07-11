@@ -1,4 +1,4 @@
-import * as Communicator from "../hoops-web-viewer.mjs";
+import * as Communicator from "./hoops-web-viewer.mjs";
 export function createViewer(viewerMode, modelName, containerId, reverseProxy, modelDirArr) {
     return new Promise(function (resolve, reject) {
         if (viewerMode == "SCS" || viewerMode == "scs") {
@@ -38,6 +38,7 @@ export function createViewer(viewerMode, modelName, containerId, reverseProxy, m
                     model: modelName,
                     rendererType: rendererType,
                     boundingPreviewMode: "none",
+                    enginePath: "./js/"
                 });
             // }
             // else {
@@ -60,13 +61,15 @@ function createScsViewer(scsFileName, containerId) {
         if ("_empty.scs" != scsFileName) {
             var viewer = new Communicator.WebViewer({
                 containerId: containerId,
-                endpointUri: scsFileName
+                endpointUri: scsFileName,
+                enginePath: "./js/"
             });
         }
         else {
             var viewer = new Communicator.WebViewer({
                 containerId: containerId,
-                empty: true
+                empty: true,
+                enginePath: "./js/"
             });
         }
         resolve(viewer);

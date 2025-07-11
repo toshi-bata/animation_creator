@@ -1,6 +1,6 @@
-import * as Communicator from "../hoops-web-viewer.mjs";
+import * as Communicator from "./hoops-web-viewer.mjs";
 // compute angle and rotation axis between two vectors
-function vectorsAngleDeg(point3d1, point3d2) {
+export function vectorsAngleDeg(point3d1, point3d2) {
     if (point3d1.equalsWithTolerance(point3d2, 1.0E-8)) {
         return {
             angleDeg: 0, 
@@ -30,7 +30,7 @@ function vectorsAngleDeg(point3d1, point3d2) {
     }
 }
 
-function rotatePoint(matrix, point) {
+export function rotatePoint(matrix, point) {
     const zero =  Communicator.Point3.zero();
     let zeroTranse = Communicator.Point3.zero();
     let pointTranse = Communicator.Point3.zero();
@@ -144,8 +144,8 @@ export class ArrowMarkup extends Communicator.Markup.MarkupItem {
     }
 
     draw() {
-        const stPnt = Communicator.Point2.fromPoint3(this._viewer.getView().projectPoint(this._stPnt));
-        let enPnt = Communicator.Point2.fromPoint3(this._viewer.getView().projectPoint(this._enPnt));
+        const stPnt = Communicator.Point2.fromPoint3(this._viewer.view.projectPoint(this._stPnt));
+        let enPnt = Communicator.Point2.fromPoint3(this._viewer.view.projectPoint(this._enPnt));
 
         if (this._constantLength) {
             const p0 = new Communicator.Point2(0, 0);
@@ -157,11 +157,11 @@ export class ArrowMarkup extends Communicator.Markup.MarkupItem {
             if (isNaN(diagonalLength) || diagonalLength < 1) diagonalLength = 1;
 
             const endPnt = this._stPnt.copy().add(this._enPnt.copy().scale(diagonalLength));
-            enPnt = Communicator.Point2.fromPoint3(this._viewer.getView().projectPoint(endPnt));
+            enPnt = Communicator.Point2.fromPoint3(this._viewer.view.projectPoint(endPnt));
         }
 
         this._line.set(stPnt, enPnt);
-        this._viewer.getMarkupManager().getRenderer().drawLine(this._line);
+        this._viewer.markupManager.getRenderer().drawLine(this._line);
     }
  
     hit() {
@@ -201,9 +201,9 @@ export class MarkerMarkup extends Communicator.Markup.MarkupItem {
     }
 
     draw() {
-        const point = Communicator.Point2.fromPoint3(this._viewer.getView().projectPoint(this._point));
+        const point = Communicator.Point2.fromPoint3(this._viewer.view.projectPoint(this._point));
         this._circle.setCenter(point);
-        this._viewer.getMarkupManager().getRenderer().drawCircle(this._circle);
+        this._viewer.markupManager.getRenderer().drawCircle(this._circle);
     }
  
     hit() {

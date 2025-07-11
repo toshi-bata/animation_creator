@@ -102,3 +102,6 @@ label + input[type="radio"] {
     height:275px;
     position:relative;
 }
+span {
+    margin-left: 1rem;
+}

@@ -18,6 +18,7 @@ class AnimationSteps {
         this._timelineId = 9;
         this._id = 0;
         this._currentGroupId = 0;
+        this._nodeIdMap = {};
     }
 
     setHomeCamera(camera) {
@@ -90,7 +91,7 @@ class AnimationSteps {
         const start = this.getTerminationTime();
         const duration = 0.5;
 
-        var json = camera.forJson();
+        var json = camera.toJson();
         var step = {
             type: "camera",
             camera: json,
@@ -125,7 +126,7 @@ class AnimationSteps {
         this._steps.push(step);
 
         // Update table
-        var cells = this._addTableRow(start, duration, this._id++, group);
+        var cells = this._addTableRow(start, duration, this._id++);
         cells[this._typeId].innerHTML = this._types[1];
         cells[this._nodesId].innerHTML = JSON.stringify(nodes);
         var str = JSON.stringify(vector);
@@ -247,6 +248,31 @@ class AnimationSteps {
         return true;
     }
     
+    serialize() {
+        this.update();
+            
+        let seriSteps = JSON.parse(JSON.stringify(this._steps));
+
+        for (let step of seriSteps) {
+            if (undefined != step.nodes) {
+                let nodeNames = [];
+                for (let node of step.nodes) {
+                    const name = this._nodeIdMap[node];
+                    if (undefined != name) {
+                        nodeNames.push(name);
+                    }
+                }
+                step.nodes = nodeNames;
+            }
+        }
+
+        var data = {
+            homeCamera: this._homeCamera,
+            steps: seriSteps
+        }
+        return data;
+    }
+
     save() {
         return new Promise((resolve, reject) => {
             this.update();
@@ -289,6 +315,19 @@ class AnimationSteps {
     }
     
     setSteps(steps) {
+        for (let step of steps) {
+            if (undefined != step.nodes) {
+                let nodeIsd = [];
+                for (let name of step.nodes) {
+                    // const id = getKeyByValue(this._nodeIdMap, name);
+                    const id = Object.keys(this._nodeIdMap).find((id) => this._nodeIdMap[id] === name);
+                    if (undefined != id) {
+                        nodeIsd.push(Number(id));
+                    }
+                }
+                step.nodes = nodeIsd;
+            }
+        }
         this._steps = steps;
     }
     
@@ -337,6 +376,22 @@ class AnimationSteps {
                     break;
             }
         }
+    }
+
+    _treeTraverse(node) {
+        var modelNodeName = this._viewer.model.getNodeName(node);
+        var children = this._viewer.model.getNodeChildren(node);
+
+        for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            this._nodeIdMap[child] = modelNodeName + '-' + i;
+            this._treeTraverse(child);
+        }
+    }
+
+    setModel() {
+        var root = this._viewer.model.getAbsoluteRootNode();
+        this._treeTraverse(root, 0);
     }
 }
 
