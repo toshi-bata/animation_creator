@@ -36,8 +36,6 @@
 #define POSTBUFFERSIZE  512
 #define MAXCLIENTS      1
 
-static char s_acConverterDir[256];
-
 static std::map<std::string, std::string> s_mParams;
 
 enum ConnectionType
@@ -259,9 +257,9 @@ iterate_post(void* coninfo_cls,
 
             char filePath[FILENAME_MAX];
 #ifndef _WIN32
-            sprintf(filePath, "%stemplate/%s.json", s_acConverterDir, con_info->sessionId);
+            sprintf(filePath, "../../HtmlConverter/template/%s.json", con_info->sessionId);
 #else
-            sprintf(filePath, "%stemplate\\%s.json", s_acConverterDir, con_info->sessionId);
+            sprintf(filePath, "..\\..\\HtmlConverter\\template\\%s.json", con_info->sessionId);
 #endif
             con_info->fp = fopen(filePath, "w");
 
@@ -454,9 +452,9 @@ answer_to_connection(void* cls,
                 char filePath[FILENAME_MAX];
 
 #ifndef _WIN32
-                sprintf(filePath, "%stemplate/17_custom_script_before_start_viewer.js", s_acConverterDir);
+                sprintf(filePath, "../../HtmlConverter/template/17_custom_script_before_start_viewer.js");
 #else
-                sprintf(filePath, "%stemplate\\17_custom_script_before_start_viewer.js", s_acConverterDir);
+                sprintf(filePath, "..\\..\\HtmlConverter\\template\\17_custom_script_before_start_viewer.js");
 #endif
 
                 std::ofstream ofs;
@@ -465,9 +463,9 @@ answer_to_connection(void* cls,
                 ofs << "const animDef = '";
 
 #ifndef _WIN32
-                sprintf(filePath, "%stemplate/%s.json", s_acConverterDir, con_info->sessionId);
+                sprintf(filePath, "../../HtmlConverter/template/%s.json", con_info->sessionId);
 #else
-                sprintf(filePath, "%stemplate\\%s.json", s_acConverterDir, con_info->sessionId);
+                sprintf(filePath, "..\\..\\HtmlConverter\\template\\%s.json", con_info->sessionId);
 #endif
                 addFile(ofs, filePath, false);
                 
@@ -480,9 +478,9 @@ answer_to_connection(void* cls,
                 ofs << "';" << std::endl;
 
 #ifndef _WIN32
-                sprintf(filePath, "%stemplate/17_custom_script_before_start_viewer_temp.js", s_acConverterDir);
+                sprintf(filePath, "../../HtmlConverter/template/17_custom_script_before_start_viewer_temp.js");
 #else
-                sprintf(filePath, "%stemplate\\17_custom_script_before_start_viewer_temp.js", s_acConverterDir);
+                sprintf(filePath, "..\\..\\HtmlConverter\\template\\17_custom_script_before_start_viewer_temp.js");
 #endif
                 addFile(ofs, filePath, true);
 
@@ -491,9 +489,9 @@ answer_to_connection(void* cls,
                 // Start HTML converter
                 char command[1024];
 #ifndef _WIN32
-                sprintf(command, "%sbin/Export3DToHtml ../../data/%s.prc %s/template html ../%s.html", s_acConverterDir, modelName.data(), s_acConverterDir, con_info->sessionId);
+                sprintf(command, "../../HtmlConverter/bin/Export3DToHtml ../../data/%s.prc ../HtmlConverter/template html ../%s.html", modelName.data(), con_info->sessionId);
 #else
-                sprintf(command, "%sbin\\Export3DToHtml ..\\..\\data\\%s.prc %s\\template %s ..\\%s.html", s_acConverterDir, modelName.data(), s_acConverterDir, options.data(), con_info->sessionId);
+                sprintf(command, "..\\..\\HtmlConverter\\bin\\Export3DToHtml ..\\..\\data\\%s.prc ..\\..\\HtmlConverter\\template %s ..\\%s.html", modelName.data(), options.data(), con_info->sessionId);
 #endif
                 system(command);
 
@@ -536,12 +534,6 @@ main(int argc, char** argv)
 
     int iPort = atoi(argv[1]);
     printf("Bind to %d port\n", iPort);
-
-    // Get template dir
-    GetEnvironmentVariablePath("HTML_CONVERTER_DIR", s_acConverterDir, true);
-    if (0 == strlen(s_acConverterDir))
-        return 1;
-    printf("HTML_TEMPLATE_DIR=%s\n", s_acConverterDir);
 
     struct MHD_Daemon* daemon;
 

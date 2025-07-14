@@ -1,0 +1,758 @@
+<style>
+    #animateBtns {
+        position: absolute;
+    }
+    .animateBtn {
+        width: 36px;
+        height: 36px;
+    }
+</style>
+<script>
+    var _animationSteps = null;
+    var _animationController = null;
+    $(function() {
+        var resizeTimer;
+        var interval = Math.floor(1000 / 60 * 10);
+        $(window).resize(function() {
+          if (resizeTimer !== false) {
+            clearTimeout(resizeTimer);
+          }
+          resizeTimer = setTimeout(function () {
+            layoutPage()
+          }, interval);
+        });
+
+        layoutPage();
+        function layoutPage () {
+            var winWidth = $(window).innerWidth();
+
+            $("#animateBtns").offset({ 
+                top: 20,
+                left: (winWidth - $("#animateBtns").width()) / 2 
+            });
+        }            
+
+        $(".animateBtn").on("click", function() {
+            var command = $(this).data("command");
+            switch (command) {
+                case "rewind":
+                    _animationController.rewind();
+                    break;
+                case "play":
+                    _animationController.play();         
+                    break;
+                case "pause":
+                    _animationController.pause();
+                    break;
+            };
+        });
+    });
+
+    class AnimationSteps {
+        constructor(viewer, msgs, types) {
+            this._viewer = viewer;
+            this._msgs = msgs;
+            this._types = types;
+            this._homeCamera;
+            this._steps = [];
+            this._stepId = 0;
+            this._groupId = 1;
+            this._buttonId = 1;
+            this._typeId = 2;
+            this._nodesId = 3;
+            this._directionId = 4;
+            this._centerId = 5;
+            this._distanceId = 6;
+            this._startId = 7;
+            this._durationId = 8;
+            this._timelineId = 9;
+            this._id = 0;
+            this._currentGroupId = 0;
+            this._nodeIdMap = {};
+        }
+
+        setHomeCamera(camera) {
+            var json = camera.toJson();
+            this._homeCamera = json;
+        }
+        
+        getHomeCamera() {
+            return this._homeCamera;
+        }
+        
+        getTerminationTime() {
+            var terminationTime = 0;
+            var tbl = document.getElementById("stepTable");
+            for (var i = 0; i < this._steps.length; i++) {
+                var row = tbl.children[0].children[i + 1];
+                var startTime = htmlspecialchars(row.cells[this._startId].getElementsByTagName("input")[0].value);
+                if (isNaN(startTime))
+                    continue;
+                var duration = htmlspecialchars(row.cells[this._durationId].getElementsByTagName("input")[0].value);
+                if (isNaN(duration))
+                    continue;
+                var endTime = Number(startTime) + Number(duration);
+                if (terminationTime < endTime)
+                    terminationTime = endTime;
+            }
+            return terminationTime;
+        }
+        
+        _addTableRow(start, duration, id, group) {
+            var table = document.getElementById("stepTable");
+            var row = table.insertRow(-1);
+            row._id = id;
+            var cells = [];
+            for (var i = 0; i < (this._timelineId + 1); i++) {
+                var cell = row.insertCell(-1);
+                cell.className = "stepCell";
+                cells.push(cell);
+            }
+            
+            cells[this._stepId].innerHTML = id + 1;
+            cells[this._stepId].className = "numberCell";
+            if (undefined != group) {
+                cells[this._groupId].innerHTML = group;
+                cells[this._groupId].className = "numberCell";
+            }
+            cells[this._buttonId].innerHTML = '<input class="tableBtn" type="image" title="Delete" src="css/images/delete.png" onclick="deleteRow(this)" />';
+            cells[this._buttonId].align = "center";
+            cells[this._directionId].align = "center";
+            cells[this._centerId].align = "center";
+            cells[this._startId].innerHTML = '<input class="tableInput" id="start' + id + '" type="number" step="0.5" value="' + start + '" onChange="changeStart(this)" />';
+            cells[this._durationId].innerHTML = '<input class="tableInput" id="duration' + id + '" type="number" step="0.5" value="' + String(duration) + '" onChange="changeDuration(this)" />';
+            cells[this._timelineId].innerHTML = '<div class="slider" id="slider' + id + '"></div>';
+            $("#slider" + id).slider({
+                min: 0,
+                max: 10,
+                step: 0.5,
+                range: true,
+                values: [start, start + duration],
+                change: function(e, ui) {
+                $('#start' + id).val(ui.values[0]);
+                $('#duration' + id).val(ui.values[1] - ui.values[0]);
+                },
+            });
+        
+            return cells;
+        }
+        
+        addCameraStep(camera) {
+            const start = this.getTerminationTime();
+            const duration = 0.5;
+
+            var json = camera.forJson();
+            var step = {
+                type: "camera",
+                camera: json,
+                startTime: start * 1000,
+                duration: duration * 500
+            }
+            this._steps.push(step);
+
+            // Update table
+            var cells = this._addTableRow(start, 0.5, this._id++);
+            cells[this._typeId].innerHTML = this._types[0];
+        }
+
+        addTranslationStep(nodes, vector, distance, start, duration, startPoints) {
+            var step = {
+                type: "translation",
+                nodes: nodes.concat(),
+                vector: vector,
+                distance: distance,
+                startTime: start * 1000,
+                duration: duration * 1000,
+                guideStartPoints: startPoints
+            }
+            
+            // Set group ID
+            let group;
+            if (this._currentGroupId) {
+                group = this._currentGroupId;
+                step.group = this._currentGroupId;
+            }
+
+            this._steps.push(step);
+
+            // Update table
+            var cells = this._addTableRow(start, duration, this._id++, group);
+            cells[this._typeId].innerHTML = this._types[1];
+            cells[this._nodesId].innerHTML = JSON.stringify(nodes);
+            var str = JSON.stringify(vector);
+            cells[this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'vector\')" />';
+            cells[this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(distance) + '">';
+        }
+        
+        addRotationStep(nodes, axis, center, angle, start, duration) {
+            var step = {
+                type: "rotation",
+                nodes: nodes.concat(),
+                axsis: axis,
+                center: center,
+                angle: angle,
+                startTime: start * 1000,
+                duration: duration * 1000
+            }
+            this._steps.push(step);
+            
+            var cells = this._addTableRow(start, duration, this._id++);
+            cells[this._typeId].innerHTML = this._types[2];
+            cells[this._nodesId].innerHTML = JSON.stringify(nodes);
+            var str = JSON.stringify(axis);
+            cells[this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'axsis\')" />';
+            str = JSON.stringify(center);
+            cells[this._centerId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/center.png" onclick="changeXYZ(this,\'center\')" />';
+            cells[this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(angle) + '" >';
+        }
+        
+        addHideNodesStep(nodes) {
+            var terminationTime = this.getTerminationTime();
+            var step = {
+                type: "hideNodes",
+                nodes: nodes,
+                startTime: terminationTime * 1000,
+                duration: 500
+            }
+            this._steps.push(step);
+            
+            var cells = this._addTableRow(terminationTime, 0.5, this._id++);
+            cells[this._typeId].innerHTML = this._types[3];
+            cells[this._nodesId].innerHTML = JSON.stringify(nodes);
+        }
+        
+        addBlinkNodesStep(nodes) {
+            const terminationTime = this.getTerminationTime();
+            var step = {
+                type: "blinkNodes",
+                nodes: nodes,
+                startTime: terminationTime * 1000,
+                duration: 500
+            }
+            this._steps.push(step);
+            
+            var cells = this._addTableRow(terminationTime, 1.0, this._id++);
+            cells[this._typeId].innerHTML = this._types[4];
+            cells[this._nodesId].innerHTML = JSON.stringify(nodes);
+        }
+
+        deleteStep(id) {
+            this._steps.splice(id, 1);
+        }
+        
+        startGroup() {
+            // Get max group ID
+            let groupId = 0;
+            for (let step of this._steps) {
+                if (undefined != step.group) {
+                    if (groupId < step.group) {
+                        groupId = step.group
+                    }
+                }
+            }
+            groupId++;
+            this._currentGroupId = groupId;
+        }
+
+        stopGroup() {
+            this._currentGroupId = 0;
+        }
+
+        update() {
+            var tbl = document.getElementById("stepTable");
+            var tbl = document.getElementById("stepTable");
+            for (var i = 0; i < this._steps.length; i++) {
+                var step = this._steps[i];
+                var row = tbl.children[0].children[i + 1];
+                
+                if (step.type == "translation") {
+                    var distance = htmlspecialchars(row.cells[this._distanceId].getElementsByTagName("input")[0].value);
+                    if (isNaN(distance)) {
+                        alert(this._msgs[0] + String(i + 1));
+                        return false;
+                    }
+                    step.distance = Number(distance);
+                } else if (step.type == "rotation") {
+                    var angle = htmlspecialchars(row.cells[this._distanceId].getElementsByTagName("input")[0].value);
+                    if (isNaN(angle)) {
+                        alert(this._msgs[0] + String(i + 1));
+                        return false;
+                    }
+                    step.angle = Number(angle);
+                }
+                
+                var startTime = htmlspecialchars(row.cells[this._startId].getElementsByTagName("input")[0].value);
+                if (isNaN(startTime)) {
+                    alert(this._msgs[1] + String(i + 1));
+                    return false;
+                }
+                step.startTime = Number(startTime * 1000);
+                
+                var duration = htmlspecialchars(row.cells[this._durationId].getElementsByTagName("input")[0].value);
+                if (isNaN(duration)) {
+                    alert(this._msgs[2] + String(i + 1));
+                    return false;
+                }
+                step.duration = Math.round(Number(duration * 1000));
+            }
+            return true;
+        }
+        
+        serialize() {
+            this.update();
+                
+            let seriSteps = JSON.parse(JSON.stringify(this._steps));
+
+            for (let step of seriSteps) {
+                if (undefined != step.nodes) {
+                    let nodeNames = [];
+                    for (let node of step.nodes) {
+                        const name = this._nodeIdMap[node];
+                        if (undefined != name) {
+                            nodeNames.push(name);
+                        }
+                    }
+                    step.nodes = nodeNames;
+                }
+            }
+
+            var data = {
+                homeCamera: this._homeCamera,
+                steps: seriSteps
+            }
+            return data;
+        }
+
+        save() {
+            return new Promise((resolve, reject) => {
+                this.update();
+                
+                var data = {
+                    homeCamera: this._homeCamera,
+                    steps: this._steps
+                }
+                var str = JSON.stringify(data);
+                exportAsJson(str, "../../animation_creator/jsons/" + modelName + ".json").then(function(){
+                    resolve();
+                });
+            });
+        }
+        
+        createScript() {
+            return new Promise((resolve, reject) => {
+                this.update();
+                
+                var steps = JSON.stringify(this._steps);
+                var camera = JSON.stringify(this._homeCamera);
+                var str = 
+                    "    _animationSteps = new AnimationSteps();\n" + 
+                    "    var steps = JSON.parse('" + steps + "');\n" + 
+                    "    _animationSteps.setSteps(steps);\n" +
+                    "\n" +
+                    "    var camera = JSON.parse('" + camera + "');\n" +
+                    "    var homeCamera = new Communicator.Camera.construct(camera)\n" +
+                    "    _animationSteps.setHomeCamera(homeCamera);\n" + 
+                    "\n" +
+                    "    _animationController = new AnimationController(hwv, _animationSteps);"
+                exportAsJson(str, "../../animation_creator/createHtml/template/script_custom_before_start_viewer.js").then(() => {
+                    resolve();
+                });
+            }); 
+        }
+        
+        getSteps() {
+            return this._steps;
+        }
+        
+        setSteps(steps) {
+            for (let step of steps) {
+                if (undefined != step.nodes) {
+                    let nodeIsd = [];
+                    for (let name of step.nodes) {
+                        // const id = getKeyByValue(this._nodeIdMap, name);
+                        const id = Object.keys(this._nodeIdMap).find((id) => this._nodeIdMap[id] === name);
+                        if (undefined != id) {
+                            nodeIsd.push(Number(id));
+                        }
+                    }
+                    step.nodes = nodeIsd;
+                }
+            }
+            this._steps = steps;
+        }
+        
+        listSteps() {
+            var table = document.getElementById("stepTable");
+            var len = table.rows.length;
+            for(var i = 1; i < len; i++) {
+                var rows = table.deleteRow(1);
+            }
+            
+            this._id = 0;
+            
+            for (var i = 0; i < this._steps.length; i++) {
+                var step = this._steps[i];
+                var start = step.startTime / 1000;
+                var duration = step.duration / 1000;
+                var group = step.group;
+                var cells = this._addTableRow(start, duration, this._id++, group);
+                switch(step.type) {
+                    case "camera":
+                        cells[this._typeId].innerHTML = this._types[0];
+                        break;
+                    case "translation":
+                        cells[this._typeId].innerHTML = this._types[1];
+                        cells[this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        var str = JSON.stringify(step.vector);
+                        cells[this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'vector\')" />';
+                        cells[this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(step.distance) + '">';
+                        break;
+                    case "rotation":
+                        cells[this._typeId].innerHTML = this._types[2];
+                        cells[this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        var str = JSON.stringify(step.axsis);
+                        cells[this._directionId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/dir.png" onclick="changeXYZ(this,\'axsis\')" />';
+                        str = JSON.stringify(step.center);
+                        cells[this._centerId].innerHTML = '<input class="tableBtn" type="image" title=' + str + ' src="css/images/center.png" onclick="changeXYZ(this,\'center\')" />';
+                        cells[this._distanceId].innerHTML = '<input class="tableInput" type="number" value="' + String(step.angle) + '">';
+                        break;
+                    case "hideNodes":
+                        cells[this._typeId].innerHTML = this._types[3];
+                        cells[this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        break;
+                    case "blinkNodes":
+                        cells[this._typeId].innerHTML = this._types[4];
+                        cells[this._nodesId].innerHTML = JSON.stringify(step.nodes);
+                        break;
+                }
+            }
+        }
+
+        _treeTraverse(node) {
+            var modelNodeName = this._viewer.model.getNodeName(node);
+            var children = this._viewer.model.getNodeChildren(node);
+
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+                this._nodeIdMap[child] = modelNodeName + '-' + i;
+                this._treeTraverse(child);
+            }
+        }
+
+        setModel() {
+            var root = this._viewer.model.getAbsoluteRootNode();
+            this._treeTraverse(root, 0);
+        }
+    }
+
+    class animation {
+        constructor(viewer) {
+            this._viewer = viewer;
+            this._model = this._viewer.model;
+        }
+
+        hideAnimation(nodeIds, time) {
+            var _this = this;
+            var count = 0;
+            var interval = _this._interval;
+            var stepCount =  1;
+            var stepTransparence =  1;
+            
+            if (interval <= time) {
+                stepCount =  Math.ceil(time / interval);
+                interval = time / stepCount;
+                stepTransparence = 1 / time * interval;
+            } else {
+                _this._model.setNodesVisibility(nodeIds, false);
+                return;
+            }
+            
+            var transparence = 1;
+            var id = setInterval(function () {
+                transparence -= stepTransparence;
+                _this._model.setNodesTransparency(nodeIds, transparence);
+                count++;
+                if (count >= stepCount) {
+                    _this._model.setNodesVisibility(nodeIds, false);
+                    _this._model.resetNodesTransparency(nodeIds);
+                    clearInterval(id);
+                }
+            }, interval);
+        }
+
+        translateAnimation(nodeIds, vector, time, distance, interval) {
+            var _this = this;
+            var count = 0;
+            var stepDistance = distance / time * interval;
+            var stepCount = time / interval;
+
+            var nodeTranslationMatrixes = [];
+            for (var i = 0; i < nodeIds.length; i++) {
+                var nodeLocalVector = _this._convertToLocalVector(nodeIds[i], vector);
+                nodeTranslationMatrixes.push(new Communicator.Matrix());
+                nodeTranslationMatrixes[i].setTranslationComponent(
+                    nodeLocalVector.x * stepDistance, 
+                    nodeLocalVector.y * stepDistance, 
+                    nodeLocalVector.z * stepDistance);
+            }
+
+            var id = setInterval(function () {
+                for (var i = 0; i < nodeIds.length; i++) {
+                    var nodeMatrix = _this._model.getNodeMatrix(nodeIds[i]);
+                    _this._model.setNodeMatrix(nodeIds[i], Communicator.Matrix.multiply(nodeMatrix, nodeTranslationMatrixes[i]));
+                }
+                count++;
+
+                if (count >= stepCount) {
+                    clearInterval(id);
+                }
+            }, interval);
+        }
+
+        rotateAnimation(nodeIds, rotationAxis, basePoint, time, angle, interval, localRotation) {
+            var _this = this;
+            var count = 0;
+            var stepAngle = angle / time * interval;
+            var stepCount = time / interval;
+            var translationMatrix = new Communicator.Matrix();
+            var nodeRotationMatrixes = [];
+            var localPoints = [];
+
+            for (var i = 0; i < nodeIds.length; i++) {
+                if (undefined == localRotation) {
+                    var nodeLocalAxis = _this._convertToLocalVector(nodeIds[i], rotationAxis);
+                    nodeRotationMatrixes.push(Communicator.Matrix.createFromOffAxisRotation(nodeLocalAxis, stepAngle));
+                }
+                else{
+                    nodeRotationMatrixes.push(new Communicator.Matrix.createFromOffAxisRotation(rotationAxis, stepAngle));
+                }
+                localPoints.push(_this._convertToLocalPoint(nodeIds[i], basePoint))
+            }
+
+            var id = setInterval(function () {
+                count++;
+                for (var i = 0; i < nodeIds.length; i++) {
+                    var point = Communicator.Point3.zero();
+                    nodeRotationMatrixes[i].transform(localPoints[i], point);
+                    translationMatrix.setTranslationComponent(
+                        localPoints[i].x - point.x,
+                        localPoints[i].y - point.y,
+                        localPoints[i].z - point.z);
+
+                    var nodeMatrix = _this._model.getNodeMatrix(nodeIds[i]);
+                    var multiplyMatrix = Communicator.Matrix.multiply(nodeMatrix, nodeRotationMatrixes[i]);
+                    _this._model.setNodeMatrix(nodeIds[i], Communicator.Matrix.multiply(multiplyMatrix, translationMatrix));
+                }
+
+                if (count >= stepCount) {
+                    clearInterval(id);
+                }
+            }, interval);
+        }
+
+        _convertToLocalVector = function (nodeId, vector) {
+            var _this = this;
+            var parentNode = _this._model.getNodeParent(nodeId);
+            var netMatrix = _this._model.getNodeNetMatrix(parentNode);
+            var inverseMatrix = Communicator.Matrix.inverse(netMatrix);
+            var localVector0 = Communicator.Point3.zero();
+            inverseMatrix.transform(Communicator.Point3.zero(), localVector0);
+            var localVector1 = Communicator.Point3.zero();
+            inverseMatrix.transform(vector, localVector1);
+            var localVect = new Communicator.Point3(
+                localVector1.x - localVector0.x, 
+                localVector1.y - localVector0.y, 
+                localVector1.z - localVector0.z);
+
+            return localVect.normalize();
+        }
+
+        _convertToLocalPoint = function (nodeId, point) {
+            var _this = this;
+            var parentNode = _this._model.getNodeParent(nodeId);
+            var netMatrix = _this._model.getNodeNetMatrix(parentNode);
+            var inverseMatrix = Communicator.Matrix.inverse(netMatrix);
+            var localPoint = Communicator.Point3.zero();
+            inverseMatrix.transform(point, localPoint);
+            return localPoint;
+        }
+
+        blinkAnimation = function (nodeIds, time, color) {
+            var _this = this;
+            this._model.setNodesFaceColor(nodeIds, color);
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    if (0 == i % 2)
+                        this._model.unsetNodesFaceColor(nodeIds);
+                    else
+                        this._model.setNodesFaceColor(nodeIds, color);
+                }, time / 5 * (i + 1));
+            }
+
+        }
+    }
+    class AnimationController {
+        constructor(viewer, animationSteps) {
+            this._viewer = viewer;
+            this._animationSteps = animationSteps;
+            this._homeCamera;
+            this._pause = false;
+            this._assyGuideLines = new Array(0);
+            this._keyFrameAnimation;
+            this._animation = new animation(this._viewer);
+        }
+
+        async _createKeyframeAnimation() {
+            this._keyFrameAnimation = new KeyframeAnimation(this._viewer, "animation_creator");
+
+            const homeCameraObj = this._animationSteps.getHomeCamera();
+            const homeCamera = Communicator.Camera.fromJson(homeCameraObj)
+            this._keyFrameAnimation.setHomeCamera(homeCamera);
+
+            var steps = this._animationSteps.getSteps();
+            var copySteps = steps.concat();
+            
+            copySteps.sort((a,b) => {
+                if(a.startTime < b.startTime) return -1;
+                if(a.startTime > b.startTime) return 1;
+                return 0;
+            });
+            
+
+            for (const step of copySteps) {
+                const startTime = step.startTime / 1000;
+                const duration = step.duration / 1000;
+                const type = step.type;
+                switch (type) {
+                    case "camera":
+                        const camera = Communicator.Camera.fromJson(step.camera);
+                        this._keyFrameAnimation.addCameraAnimation(camera, startTime, duration);
+                        break;
+                    case "translation":
+                        this._keyFrameAnimation.addTranslationAnimation(step.nodes, startTime, duration, step.vector, step.distance);
+                        break;
+                    case "rotation":
+                        this._keyFrameAnimation.addRotationAnimation(step.nodes, startTime, duration, step.axsis, step.center, step.angle);
+                        break;
+                    case "hideNodes":
+                        // await this._keyFrameAnimation.addOpacityAnimation(step.nodes, startTime, duration, 0);
+                        await this._keyFrameAnimation.addFadeoutAnimation(step.nodes, startTime, duration, false);
+                        break;
+                    case "blinkNodes":
+                        await this._keyFrameAnimation.addBlinkAnimation(step.nodes, startTime, duration, new Communicator.Color(255, 0, 0));
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        async play() {
+            this.rewind();
+            
+            // await this._createKeyframeAnimation();
+            // this._keyFrameAnimation.play();
+
+            var steps = this._animationSteps.getSteps();
+            var copySteps = steps.concat();
+            
+            copySteps.sort((a,b) => {
+                if(a.startTime < b.startTime) return -1;
+                if(a.startTime > b.startTime) return 1;
+                return 0;
+            });
+
+            const interval = 100;
+            for (var i in copySteps) {
+                var j = 0;
+                setTimeout(() => {
+                    if (this._pause)
+                        return;
+                    var step = copySteps[j];
+                    var type = step.type;
+                    switch(type) {
+                        case "translation":
+                            this._animation.translateAnimation(step.nodes, step.vector, step.duration, step.distance, interval);
+                            break;
+                        case "rotation":
+                            this._animation.rotateAnimation(step.nodes, step.axsis, step.center, step.duration, step.angle, interval);
+                            break;
+                        case "camera":
+                            var camera = Communicator.Camera.fromJson(step.camera);
+                            this._viewer.view.setCamera(camera, step.duration);
+                            break;
+                        case "hideNodes":
+                            this._animation.hideAnimation(step.nodes, step.duration, interval);
+                            break;
+                        case "blinkNodes":
+                            this._animation.blinkAnimation(step.nodes, step.duration, new Communicator.Color(255, 0, 0));
+                            break;
+                    }
+                    j++;
+                }, copySteps[i].startTime);
+            }
+        }
+        
+        pause() {
+            // this._keyFrameAnimation.pause();
+            this._pause = !this._pause;
+        }
+        
+        rewind() {
+            this._viewer.model.reset();
+            this._viewer.model.resetModelOpacity();
+
+            if (undefined != this._animationSteps) {
+                var cameraJson = this._animationSteps.getHomeCamera();
+                if (cameraJson != undefined) {
+                    var camera = Communicator.Camera.fromJson(cameraJson);
+                    this._viewer.view.setCamera(camera);
+                } else {
+                    this._viewer.view.resetCamera(0);
+                }
+            }
+            else if (undefined != this._homeCamera) {
+                this._viewer.view.setCamera(this._homeCamera);
+            }
+            else {
+                this._viewer.view.resetCamera(0);
+            }
+
+            // Remove guide line
+            let promiseArr = new Array(0);
+            for (let assyGuideLine of this._assyGuideLines) {
+                promiseArr.push(assyGuideLine.removeGuidePolylines());
+            }
+
+            if (promiseArr.length) {
+                Promise.all(promiseArr).then(()=> {
+                    this._assyGuideLines.length = 0;
+                });
+            }
+        }
+
+        async serialize() {
+            this.rewind();
+            
+            // await this._createKeyframeAnimation();
+            // const obj = this._keyFrameAnimation.serialize();
+            // return obj;
+
+            return this._animationSteps.serialize();
+        }
+
+        playByObj(obj) {
+            if (undefined != obj.homeCamera) {
+                this._homeCamera = Communicator.Camera.fromJson(obj.homeCamera);
+            }
+
+            const animation = obj.animation;
+
+            this._keyFrameAnimation = new KeyframeAnimation(this._viewer);
+            this._keyFrameAnimation.deserialize(animation);
+
+            this._keyFrameAnimation.play();
+        }
+    }
+
+ </script>

@@ -1,0 +1,276 @@
+   <!-- Toolbar HTML-->
+   <div id="toolBar">
+    <div class="toolbar-tools">
+     <div class="hoops-tool" data-operatorclass="toolbar-home" id="home-button" title="Reset Camera">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="tool-separator" id="tool_separator_1">
+     </div>
+     <div class="hoops-tool toolbar-menu" data-operatorclass="toolbar-camera" data-submenu="view-submenu" id="view-button" title="Camera Menu">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="hoops-tool toolbar-menu" data-operatorclass="toolbar-wireframeshaded" data-submenu="edgeface-submenu" id="edgeface-button" title="Wireframe on Shaded">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="tool-separator" id="tool_separator_2">
+     </div>
+     <div class="hoops-tool toolbar-radio" data-operatorclass="toolbar-redline-note" data-submenu="redline-submenu" id="redline-button" title="Redline Note">
+      <div class="smarrow">
+      </div>
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="hoops-tool toolbar-radio active-tool" data-operatorclass="toolbar-select" data-submenu="click-submenu" id="click-button" title="Select">
+      <div class="smarrow">
+      </div>
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="hoops-tool toolbar-menu" data-operatorclass="toolbar-orbit" data-submenu="camera-submenu" id="camera-button" title="Orbit Camera">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="tool-separator" id="tool_separator_3">
+     </div>
+     <div class="hoops-tool toolbar-menu-toggle" data-operatorclass="toolbar-explode" data-submenu="explode-slider" id="explode-button" title="Explode Menu">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="hoops-tool toolbar-menu-toggle" data-operatorclass="toolbar-cuttingplane" data-submenu="cuttingplane-submenu" id="cuttingplane-button" title="Cutting Plane Menu">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="tool-separator" id="tool_separator_4">
+     </div>
+     <div class="hoops-tool" data-operatorclass="toolbar-snapshot" id="snapshot-button" title="Snapshot">
+      <div class="tool-icon">
+      </div>
+     </div>
+     <div class="hoops-tool" data-operatorclass="toolbar-settings" id="settings-button" title="Settings">
+      <div class="tool-icon">
+      </div>
+     </div>
+    </div>
+    <div id="submenus">
+     <div class="toolbar-submenu submenus" data-button="redline-button" id="redline-submenu">
+      <table>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-redline-circle" id="redline-circle-button" title="Redline Circle">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-redline-rectangle" id="redline-rectangle-button" title="Redline Rectangle">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-redline-note" id="redline-note" title="Redline Note">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-redline-freehand" id="redline-freehand" title="Redline Freehand">
+         </div>
+        </td>
+       </tr>
+      </table>
+     </div>
+     <div class="toolbar-submenu submenus" data-button="camera-button" id="camera-submenu">
+      <table>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-walk" id="operator-camera-walk" title="Walk">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-turntable" id="operator-camera-turntable" title="Turntable">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-orbit" id="operator-camera-orbit" title="Orbit Camera">
+         </div>
+        </td>
+       </tr>
+      </table>
+     </div>
+     <div class="toolbar-submenu submenus" data-button="edgeface-button" id="edgeface-submenu">
+      <table>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-wireframeshaded" id="viewport-wireframe-on-shaded" title="Shaded With Lines">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-shaded" id="viewport-shaded" title="Shaded">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-hidden-line" title="Hidden Line">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-wireframe" id="viewport-wireframe" title="Wireframe">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-xray" id="viewport-xray" title="XRay">
+         </div>
+        </td>
+       </tr>
+      </table>
+     </div>
+     <div class="toolbar-submenu submenus" id="view-submenu">
+      <table>
+       <tr>
+        <td>
+         <div class="submenu-icon disabled" data-operatorclass="toolbar-face" id="view-face" title="Orient Camera To Selected Face">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-iso" id="view-iso" title="Iso View">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-ortho" id="view-ortho" title="Orthographic Projection">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-persp" id="view-persp" title="Perspective Projection">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-left" id="view-left" title="Left View">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-right" id="view-right" title="Right View">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-bottom" id="view-bottom" title="Bottom View">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-front" id="view-front" title="Front View">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-back" id="view-back" title="Back View">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-top" id="view-top" title="Top View">
+         </div>
+        </td>
+       </tr>
+      </table>
+     </div>
+     <div class="toolbar-submenu submenus" data-button="click-button" id="click-submenu">
+      <table>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-note" id="note-button" title="Create Note-Pin">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-measure-angle" id="measure-angle-between-faces" title="Measure Angle Between Faces">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-measure-distance" id="measure-distance-between-faces" title="Measure Distance Between Faces">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-measure-edge" id="measure-edges" title="Measure Edges">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-measure-point" id="measure-point-to-point" title="Measure Point to Point">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-select" id="select-parts" title="Select Parts">
+         </div>
+        </td>
+        <td>
+         <div class="submenu-icon" data-operatorclass="toolbar-area-select" id="area-select" title="Area Select">
+         </div>
+        </td>
+       </tr>
+      </table>
+     </div>
+     <div class="toolbar-submenu slider-menu submenus" id="explode-slider">
+      <div class="toolbar-slider" id="explosion-slider" style="height: 90px">
+      </div>
+     </div>
+     <div class="toolbar-submenu cutting-plane submenus no-modal" id="cuttingplane-submenu">
+      <table>
+       <tr>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon disabled" data-operatorclass="toolbar-cuttingplane-face" data-plane="face" id="cuttingplane-face" title="Create Cutting Plane On Selected Face">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon" data-operatorclass="toolbar-cuttingplane-x" data-plane="x" id="cuttingplane-x" title="Cutting Plane X">
+         </div>
+        </td>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon disabled" data-operatorclass="toolbar-cuttingplane-section" data-plane="section" id="cuttingplane-section" title="Cutting Plane Visibility Toggle">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon" data-operatorclass="toolbar-cuttingplane-y" data-plane="y" id="cuttingplane-y" title="Cutting Plane Y">
+         </div>
+        </td>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon disabled" data-operatorclass="toolbar-cuttingplane-toggle" data-plane="toggle" id="cuttingplane-toggle" title="Cutting Plane Section Toggle">
+         </div>
+        </td>
+       </tr>
+       <tr>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon" data-operatorclass="toolbar-cuttingplane-z" data-plane="z" id="cuttingplane-z" title="Cutting Plane Z">
+         </div>
+        </td>
+        <td>
+         <div class="toolbar-cp-plane submenu-icon disabled" data-operatorclass="toolbar-cuttingplane-reset" data-plane="reset" id="cuttingplane-reset" title="Cutting Plane Reset">
+         </div>
+        </td>
+       </tr>
+      </table>
+     </div>
+    </div>
+   </div>
+   <div id="viewer-settings-dialog-container">

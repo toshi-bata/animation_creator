@@ -1,2 +1,0 @@
-ExportToHtml.exe "C:\git\ce_tools\users\toshiaki\Exchange_Publish\HOOPS_Exchange_Publish_2019_SP0_U1\samples\data\catiaV5\CV5_Micro_engine\_micro engine.CATProduct" "template\htmltemplate2.html" "html" "C:\temp\microengine.html" "00010100"
-pause
