@@ -15,7 +15,6 @@
 #include <string>
 #include <map>
 #include <microhttpd.h>
-#include "utilities.h"
 #include <string.h>
 #include <vector>
 #include <fstream>
@@ -35,6 +34,15 @@
 // #define PORT            8888
 #define POSTBUFFERSIZE  512
 #define MAXCLIENTS      1
+
+// define separator
+#ifndef _WIN32
+#define PATH_SEP '/'
+#define PATH_SEP_STR "/"
+#else
+#define PATH_SEP '\\'
+#define PATH_SEP_STR "\\"
+#endif
 
 static std::map<std::string, std::string> s_mParams;
 
@@ -256,11 +264,7 @@ iterate_post(void* coninfo_cls,
                 return MHD_YES;
 
             char filePath[FILENAME_MAX];
-#ifndef _WIN32
-            sprintf(filePath, "../../HtmlConverter/template/%s.json", con_info->sessionId);
-#else
-            sprintf(filePath, "..\\..\\HtmlConverter\\template\\%s.json", con_info->sessionId);
-#endif
+            sprintf(filePath, "..%s..%sHtmlConverter%stemplate%s%s.json", PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, con_info->sessionId);
             con_info->fp = fopen(filePath, "w");
 
             if (!con_info->fp)
@@ -450,50 +454,39 @@ answer_to_connection(void* cls,
                 if (!paramStrToStr("options", options)) return MHD_NO;
 
                 char filePath[FILENAME_MAX];
-
-#ifndef _WIN32
-                sprintf(filePath, "../../HtmlConverter/template/17_custom_script_before_start_viewer.js");
-#else
-                sprintf(filePath, "..\\..\\HtmlConverter\\template\\17_custom_script_before_start_viewer.js");
-#endif
+                sprintf(filePath, "..%s..%sHtmlConverter%stemplate%s17_custom_script_before_start_viewer.js", 
+                    PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR);
 
                 std::ofstream ofs;
                 ofs.open(filePath, std::ios::out | std::ios::trunc);
 
                 ofs << "const animDef = '";
 
-#ifndef _WIN32
-                sprintf(filePath, "../../HtmlConverter/template/%s.json", con_info->sessionId);
-#else
-                sprintf(filePath, "..\\..\\HtmlConverter\\template\\%s.json", con_info->sessionId);
-#endif
+                sprintf(filePath, "..%s..%sHtmlConverter%stemplate%s%s.json", 
+                    PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, con_info->sessionId);
                 addFile(ofs, filePath, false);
                 
-#ifndef _WIN32
-                unlink(filePath);
-#else
                 remove(filePath);
-#endif
 
                 ofs << "';" << std::endl;
 
-#ifndef _WIN32
-                sprintf(filePath, "../../HtmlConverter/template/17_custom_script_before_start_viewer_temp.js");
-#else
-                sprintf(filePath, "..\\..\\HtmlConverter\\template\\17_custom_script_before_start_viewer_temp.js");
-#endif
+                sprintf(filePath, "..%s..%sHtmlConverter%stemplate%s17_custom_script_before_start_viewer_temp.js", 
+                    PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR);
                 addFile(ofs, filePath, true);
 
                 ofs.close();
 
                 // Start HTML converter
                 char command[1024];
-#ifndef _WIN32
-                sprintf(command, "../../HtmlConverter/bin/Export3DToHtml ../../data/%s.prc ../HtmlConverter/template html ../%s.html", modelName.data(), con_info->sessionId);
-#else
-                sprintf(command, "..\\..\\HtmlConverter\\bin\\Export3DToHtml ..\\..\\data\\%s.prc ..\\..\\HtmlConverter\\template %s ..\\%s.html", modelName.data(), options.data(), con_info->sessionId);
-#endif
+                sprintf(command, "..%s..%sHtmlConverter%sbin%sExport3DToHtml ..%s..%sdata%s%s.prc ..%s..%sHtmlConverter%stemplate %s ..%s%s.html",
+                    PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, 
+                    PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, modelName.data(),
+                    PATH_SEP_STR, PATH_SEP_STR, PATH_SEP_STR, 
+                    options.data(), PATH_SEP_STR, con_info->sessionId);
+     
+                printf("HTML exporting ...\n");
                 system(command);
+                printf("\nHTML export was done.\n");
 
                 con_info->answerstring = response_success;
                 con_info->answercode = MHD_HTTP_OK;
@@ -505,13 +498,8 @@ answer_to_connection(void* cls,
         else if (0 == strcmp(url, "/Downloaded"))
         {
             char filePath[FILENAME_MAX];
-#ifndef _WIN32
-            sprintf(filePath, "../%s.html", con_info->sessionId);
-            unlink(filePath);
-#else
-            sprintf(filePath, "..\\%s.html", con_info->sessionId);
+            sprintf(filePath, "..%s%s.html", PATH_SEP_STR, con_info->sessionId);
             remove(filePath);
-#endif
 
             con_info->answerstring = response_success;
             con_info->answercode = MHD_HTTP_OK;

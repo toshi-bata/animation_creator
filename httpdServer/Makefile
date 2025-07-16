@@ -1,17 +1,9 @@
-ifeq ($(shell uname),Linux)
-	BIN = bin/HttpdServer
-else
-	BIN = /Users/toshi/HttpdServer
-endif
+BIN = bin/HttpdServer
 
-OBJS = main.cpp utilities.cpp
+OBJS = main.cpp
 CC = g++ -std=c++11
 
-ifeq ($(shell uname),Linux)
-	PATH_TO_INCLUDES = -I /usr/local/include
-else
-	PATH_TO_INCLUDES = -I /usr/local/include
-endif
+PATH_TO_INCLUDES = -I /usr/local/include
 
 PATH_TO_LIBMHD_LIBS = /usr/local/lib
 

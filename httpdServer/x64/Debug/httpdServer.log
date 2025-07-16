@@ -1,6 +1,0 @@
-﻿  main.cpp
-C:\git\toshi-bata\animation_creator\httpdServer\main.cpp(227,31): warning C4473: 'sprintf': 書式文字列として渡された引数が不足しています
-C:\git\toshi-bata\animation_creator\httpdServer\main.cpp(227,31): message : プレースホルダーとそのパラメーターには 3 の可変個引数が必要ですが、2 が指定されています。
-C:\git\toshi-bata\animation_creator\httpdServer\main.cpp(227,31): message : 不足している可変個引数 3 が書式文字列 '%s' に必要です
-C:\git\toshi-bata\animation_creator\httpdServer\main.cpp(209,11): warning C4101: 'fp': ローカル変数は 1 度も使われていません。
-  httpdServer.vcxproj -> C:\git\toshi-bata\animation_creator\httpdServer\bin\HttpdServer.exe
