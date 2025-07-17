@@ -541,8 +541,10 @@ main(int argc, char** argv)
     bool bFlg = true;
     while (bFlg)
     {
+#ifdef _DEBUG
         if (getchar())
             bFlg = false;
+#endif
 
     }
     MHD_stop_daemon(daemon);
