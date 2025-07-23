@@ -1,24 +1,7 @@
 const animObj = JSON.parse(animDef);
 
-// Bug fix
-function reverse(value) {
-    return value === 0 ? 1 : 0;
-}
-
-const homeCamera = animObj.homeCamera;
-if (undefined != homeCamera) {
-    homeCamera.projection = reverse(homeCamera.projection);
-}
-
-const steps = animObj.steps;
-if (undefined != steps) {
-    for (let step of steps) {
-        if ("camera" == step.type) {
-            step.camera.projection = reverse(step.camera.projection);
-        }
-    }
-}
-// Bug fis End
+// Because the Communicator.Projection key varies across versions, the projection object needs to be restored to its corresponding key value
+animObj.homeCamera.projection = Number(Object.keys(Communicator.Projection).find((key) => Communicator.Projection[key] === animObj.homeCamera.projection));
 
 hwv.setCallbacks({
     modelStructureReady: () => {

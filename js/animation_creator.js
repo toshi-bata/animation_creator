@@ -725,6 +725,11 @@ export class animation_creator {
                         _this._animationSteps.listSteps();
                     }
                     var camera = data.homeCamera;
+
+                    // Because the Communicator.Projection key varies across versions,
+                    // the projection object needs to be restored to its corresponding key value
+                    camera.projection = Number(Object.keys(Communicator.Projection).find((key) => Communicator.Projection[key] === camera.projection));
+
                     if(camera != undefined) {
                         _this._homeCamera = Communicator.Camera.fromJson(camera)
                         _this._animationSteps.setHomeCamera(_this._homeCamera);

@@ -254,6 +254,7 @@ class AnimationSteps {
         let seriSteps = JSON.parse(JSON.stringify(this._steps));
 
         for (let step of seriSteps) {
+            // Due to the differences in Node IDs between SC and SCS, they should be converted to the format "PartInstanceName-BodyID"
             if (undefined != step.nodes) {
                 let nodeNames = [];
                 for (let node of step.nodes) {
@@ -264,10 +265,19 @@ class AnimationSteps {
                 }
                 step.nodes = nodeNames;
             }
+
+            // Because the Communicator.Projection key varies across versions, the projection key needs to be converted to its corresponding object value
+            if (undefined != step.camera) {
+                step.camera.projection = Communicator.Projection[step.camera.projection];
+            }
         }
 
+        // Because the Communicator.Projection key varies across versions, the projection key needs to be converted to its corresponding object value
+        const homeCamera = JSON.parse(JSON.stringify(this._homeCamera)); 
+        homeCamera.projection = Communicator.Projection[homeCamera.projection];
+
         var data = {
-            homeCamera: this._homeCamera,
+            homeCamera: homeCamera,
             steps: seriSteps
         }
         return data;
@@ -316,6 +326,7 @@ class AnimationSteps {
     
     setSteps(steps) {
         for (let step of steps) {
+            // Because the Node IDs differ between SC and SCS, it is necessary to restore them from the "PartInstanceName-BodyID" to the appropriate Node IDs of the loaded model
             if (undefined != step.nodes) {
                 let nodeIsd = [];
                 for (let name of step.nodes) {
@@ -326,6 +337,11 @@ class AnimationSteps {
                     }
                 }
                 step.nodes = nodeIsd;
+            }
+
+            // Because the Communicator.Projection key varies across versions, the projection object needs to be restored to its corresponding key value
+            if (undefined != step.camera) {
+                step.camera.projection = Number(Object.keys(Communicator.Projection).find((key) => Communicator.Projection[key] === step.camera.projection));
             }
         }
         this._steps = steps;
